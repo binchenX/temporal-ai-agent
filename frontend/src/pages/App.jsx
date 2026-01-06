@@ -140,22 +140,16 @@ export default function App() {
 
     // SSE connection setup
     const setupSSE = useCallback(() => {
-        console.log("Setting up SSE connection...");
-
         try {
             const eventSource = apiService.createConversationStream();
             eventSourceRef.current = eventSource;
 
             // Handle new messages
             eventSource.addEventListener('messages', (event) => {
-                console.log("📨 SSE event 'messages' received:", event.data);
                 const data = JSON.parse(event.data);
-                console.log("📦 Parsed data:", data);
                 const newMessages = data.messages || [];
-                console.log(`✉️ New messages count: ${newMessages.length}`);
 
                 if (newMessages.length > 0) {
-                    console.log("💬 Adding messages to conversation:", newMessages);
                     setConversation(prev => [...prev, ...newMessages]);
 
                     // Update UI state based on last message
@@ -171,25 +165,23 @@ export default function App() {
             });
 
             // Handle workflow ended
-            eventSource.addEventListener('workflow_ended', (event) => {
-                console.log("🏁 SSE event 'workflow_ended' received:", event.data);
+            eventSource.addEventListener('workflow_ended', () => {
                 setDone(true);
                 setLoading(false);
             });
 
             // Handle waiting state
-            eventSource.addEventListener('waiting', (event) => {
-                console.log("⏳ SSE event 'waiting' received:", event.data);
+            eventSource.addEventListener('waiting', () => {
+                // Workflow not started yet, just wait
             });
 
             // Handle errors
             eventSource.addEventListener('error', (event) => {
-                console.error("❌ SSE error event:", event);
-                console.log("📊 EventSource readyState:", eventSource.readyState, "(0=CONNECTING, 1=OPEN, 2=CLOSED)");
+                console.error("SSE error:", event);
 
                 // EventSource automatically reconnects, but we can handle specific errors
                 if (eventSource.readyState === EventSource.CLOSED) {
-                    console.log("🔌 SSE connection closed, falling back to polling");
+                    console.log("SSE connection closed, falling back to polling");
                     setUsingSSE(false);
                     handleError(
                         { status: 500, message: "SSE connection failed" },
@@ -200,13 +192,7 @@ export default function App() {
 
             // Handle connection open
             eventSource.onopen = () => {
-                console.log("✅ SSE connection established (readyState:", eventSource.readyState, ")");
                 clearErrorOnSuccess();
-            };
-
-            // Generic message handler to catch all events (for debugging)
-            eventSource.onmessage = (event) => {
-                console.log("🔔 Generic SSE message received (no event type):", event.data);
             };
 
         } catch (err) {
