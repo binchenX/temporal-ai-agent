@@ -206,7 +206,6 @@ export default function App() {
     useEffect(() => {
         return () => {
             if (eventSourceRef.current) {
-                console.log("Closing SSE connection");
                 eventSourceRef.current.close();
             }
         };
@@ -217,21 +216,25 @@ export default function App() {
         if (usingSSE && USE_SSE) {
             // Use SSE
             setupSSE();
+
+            return () => {
+                if (eventSourceRef.current) {
+                    eventSourceRef.current.close();
+                }
+            };
         } else {
             // Fallback to polling
             console.log("Using polling fallback");
             pollingRef.current = setInterval(fetchConversationHistory, POLL_INTERVAL);
-        }
 
-        return () => {
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current);
-            }
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
-        };
-    }, [usingSSE, setupSSE, fetchConversationHistory]);
+            return () => {
+                if (pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                }
+            };
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [usingSSE]);
 
 
     const scrollToBottom = useCallback(() => {
